@@ -57,9 +57,24 @@ print(store)
  
 type(str_list)
 
+''' another approach -- this code seems compact than above'''
+p = re.compile('ab*')
+store2 = []
+str_list = ['ab123',  "345abc" , 'abc345']
 
-
+for i, obj in enumerate(str_list):
     
+    temp_matched = p.match(obj)
+    
+    if temp_matched:
+        
+        store2.append(str_list[i])
+        
+print(store2)
+        
+
+''' ========= '''
+
 a=2
 if(a!=1):
     print("Unequal")
@@ -77,6 +92,26 @@ print(re.match(r'From\s+', 'Fromage amk'))
 print(re.match(r'Fromage\s+', 'Fromage amk'))
 
 print(re.match(r'From\s+', 'From amk Thu May 14 19:12:10 1998'))
+
+p2 = re.compile(r'\d+')
+p2.findall('12 drummers drumming, 11 pipers piping, 10 lords a-leaping')
+
+m = re.match('hello', 'hello world!')
+print(m.group())
+
+
+p = re.compile('\d+')
+print(p.split('one1two2three3four4'))
+
+p = re.compile(r'(\w+) (\w+)')
+s = 'i say, hello world!'
+print(p.subn(r'\2 \1', s))
+
+
+
+
+
+
 
 
 
