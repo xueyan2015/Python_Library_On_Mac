@@ -80,6 +80,7 @@ if(a!=1):
     print("Unequal")
     
 '''
+
 '''
 
 [ "t"n"r"f"v]
@@ -109,10 +110,99 @@ print(p.subn(r'\2 \1', s))
 
 
 
+'''
+Mar05, 2016-- experiment with normal expression...
+'''
+
+col_names = ['log_var1', 'Log_var1', 'var1_log', 'var2_log_abc', 'var2_log_log_abc', 'var2_log3_log_abc', 'var2_2log3_log3_log_abc']
+
+pattern0 = re.compile('log')
+print(re.match(pattern0, col_names[0]))  #<_sre.SRE_Match object; span=(0, 3), match='log'>
+print(re.match(pattern0, col_names[0]).group())  #log
+print(re.match(pattern0, col_names[1]))  #None
+print(re.match(pattern0, col_names[2]))  #None
+print(re.match(pattern0, col_names[3]))  #None
+
+pattern0b = re.compile('log', re.I)  
+print(re.match(pattern0b, col_names[0]))  # <_sre.SRE_Match object; span=(0, 3), match='log'>
+print(re.match(pattern0b, col_names[0]).group())  #log
+print(re.match(pattern0b, col_names[1]))  # <_sre.SRE_Match object; span=(0, 3), match='Log'>
+print(re.match(pattern0b, col_names[2]))  # None
+print(re.match(pattern0b, col_names[3]))  # None
+
+print(re.search(pattern0b, col_names[0]))  #  <_sre.SRE_Match object; span=(0, 3), match='log'>
+print(re.search(pattern0b, col_names[0]).group())  # log
+print(re.search(pattern0b, col_names[1]))  #  <_sre.SRE_Match object; span=(0, 3), match='Log'>
+print(re.search(pattern0b, col_names[2]))  #  <_sre.SRE_Match object; span=(5, 8), match='log'>
+print(re.search(pattern0b, col_names[3]))  #  <_sre.SRE_Match object; span=(5, 8), match='log'>
+
+print(re.search(pattern0b, col_names[4]))  #  <_sre.SRE_Match object; span=(5, 8), match='log'>
+print(re.findall(pattern0b, col_names[4]))
+for m in re.finditer(pattern0b, col_names[4]):
+    print(m.group())
+
+pattern0c = re.compile('log\d+')
+pattern0d = re.compile('log\d*') 
+pattern0e = re.compile('\d+log\d+')
+pattern0f = re.compile('\d*log\d*')
+
+print(re.search(pattern0c, col_names[5]))  #<_sre.SRE_Match object; span=(5, 9), match='log3'>
+print(re.findall(pattern0c, col_names[5]))  # ['log3']
+
+print(re.search(pattern0d, col_names[5]))  #<_sre.SRE_Match object; span=(5, 9), match='log3'>
+print(re.findall(pattern0d, col_names[5]))  # ['log3', 'log']
+
+print(re.search(pattern0e, col_names[6]))   #<_sre.SRE_Match object; span=(5, 10), match='2log3'>
+print(re.findall(pattern0e, col_names[6]))  #['2log3']
+
+print(re.search(pattern0f, col_names[6]))
+print(re.findall(pattern0f, col_names[6]))
 
 
 
 
+pattern1 = re.compile('\Alog')
+print(re.search(pattern1, col_names[0]))  #<_sre.SRE_Match object; span=(0, 3), match='log'>
+print(re.search(pattern1, col_names[1]))  #None
+print(re.search(pattern1, col_names[2]))  #None
+print(re.search(pattern1, col_names[3]))  #None
+
+
+pattern2 = re.compile('\Zlog')
+print(re.search(pattern2, col_names[0]))
+print(re.search(pattern2, col_names[1]))
+print(re.search(pattern2, col_names[2]))
+print(re.search(pattern2, col_names[3]))
+
+
+'''
+Mar-07, 2017
+'''
+#find string that ends with "log"
+nojoke1 = re.findall("log$", col_names[0])
+nojoke2 = re.findall("log$", col_names[2])
+
+nojoke1c = re.search("log$", col_names[0])
+nojoke2c = re.search("log$", col_names[2])
+
+print(nojoke1)
+print(nojoke2)
+
+print(nojoke1c)
+print(nojoke2c)
+
+#find string that begins with "log"
+nojoke3 = re.findall(r"^log", col_names[0])
+nojoke4 = re.findall(r"^log", col_names[2])
+
+nojoke3c = re.search(r"^log", col_names[0])
+nojoke4c = re.search(r"^log", col_names[2])
+
+print(nojoke3)
+print(nojoke4)
+
+print(nojoke3c)
+print(nojoke4c)
 
 
 
