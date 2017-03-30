@@ -12,9 +12,11 @@ import os
 from sklearn import preprocessing
 import re
 
-#from sklearn.model_selection import KFold  # this one is only available in Python 3.6
-#from sklearn.cross_validation import KFold 
-from sklearn import cross_validation
+from sklearn.model_selection import KFold     # this one is only available in Python 3.6
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
+
 
 os.chdir('/Users/xueyan/Documents/French_Case')
 
@@ -132,10 +134,26 @@ print(len(vars))
 log_vars = set([obj for obj in lowercase_colnames if re.search(r'^log_|^lg|^dummy', obj)]) - set([obj2 for obj2 in lowercase_colnames if re.search(r'^log_panel_', obj2)])
 log_vars = list(log_vars)
 print(len(log_vars))
-
 #QC
 [v for v in log_vars if v not in list(R_log_dummy_varlist['log_dummy'])]
 [s for s in list(R_log_dummy_varlist['log_dummy']) if s not in log_vars]
+
+#response
+response = [obj2 for obj2 in lowercase_colnames if re.search(r"^panel_", obj2)]
+
+#log response
+log_response = [obj2 for obj2 in lowercase_colnames if re.search(r'^log_panel_', obj2)]
+
+#panel data and non-panel data
+panel_data = data_merged[ np.isnan(data_merged.panel_catt_daily) == False] # there should be a better way, find out later
+
+nonpanel_data = data_merged[np.isnan(data_merged.panel_catt_daily)]
+#check panel data
+var_std = panel_data.std(axis = 1)
+np.sum(np.isnan(var_std))
+cleaned = panel_data.dropna()
+print(panel_data.shape)
+print(cleaned.shape)
 
 '''
 test support vector regression 
@@ -151,97 +169,179 @@ def pre_process_data(input_data, model_form, standardized, nfold = 3):
     #1. select columns according to model_form
     if model_form == 'original':
         #
+        x = input_data[vars]
+
+        multiple_ys = input_data[response]
+
+        print(x.head(3))
+        
+        print(multiple_ys.head(3))
+        
     elif model_form == 'log-log':
-        
         #
-    
-    #2. split the input data into nfold parts
+        x = input_data[log_vars]
+
+        multiple_ys = input_data[log_response]
+
+        print(x.head(3))
         
+        print(multiple_ys.head(3))
+
+    #record row index in case the data will be re-shuffled when being splitted into k folds
+
+    row_indexes = list(x.index)
+
+    #2. split the input data into nfold parts -- create indexes
+    print('initialize nfolds...\n')
+    kf = KFold(n_splits=nfold, random_state=123, shuffle=False)    
+    
     #3. standardize selected data
-    if standardized:
-        
-        #
-        
-    else:
 
-  
+    #initalized empty list --
+    print('initialized an empty list to store final outcome... \n')
+    outcome = []
 
-    #end
-    
-#test KFold()    
-kf = cross_validation.KFold(12, n_folds=3, shuffle= True, random_state = 123)
-len(kf)
-for train_index, test_index in kf:    
-    print("TRAIN:", train_index, "TEST:", test_index)    
-#end of testing KFold().
+    for train_index, test_index in kf.split(x):
+
+        print('check training index and testing index...\n')
+
+        print(train_index)
+        print('\n')
+        print(test_index)
+        print('\n')
+
+
+        print('split input data into training part and testing part... \n')
+        train_x = x.iloc[train_index, : ]
+        train_ys = multiple_ys.iloc[train_index, : ]
+        print(train_x.head(5))
+        print(train_ys.head(5))
+
+        test_x =  x.iloc[test_index, : ]
+        test_ys =  multiple_ys.iloc[test_index, : ]
+        print(test_x.head(5))
+        print(test_ys.head(5))
+        
+        if standardized:
+            print('Standardize training and testing data...\n')
+            # form transformers
+            print('Form transformers for standardization ... \n')
+
+            scaler_x = preprocessing.StandardScaler().fit(train_x)
+
+            scaler_ys = preprocessing.StandardScaler().fit(train_ys)
+
+            print('End of forming transformers\n')
+
+            # transform...
+            print('Start to standardize train_x and test_x... \n')
+
+            train_x_scaled = scaler_x.transform(train_x)
+            test_x_scaled =  scaler_x.transform(test_x)
+
+            print('Start to standardize train_ys and test_ys... \n')
+            train_ys_scaled = scaler_ys.transform(train_ys)
+            test_ys_scaled = scaler_ys.transform(test_ys)
+            print('End of standardization...\n')
+
+            #convert back to DataFrame and keep same row indexes and column names
+            train_x_scaled = pd.DataFrame(train_x_scaled, columns = list(train_x.columns), index = list(train_x.index))
+            test_x_scaled = pd.DataFrame(test_x_scaled, columns = list(test_x.columns), index = list(test_x.index))
+
+            train_ys_scaled = pd.DataFrame(train_ys_scaled, columns = list(train_ys.columns), index = list(train_ys.index))
+            test_ys_scaled = pd.DataFrame(test_ys_scaled, columns = list(test_ys.columns), index = list(test_ys.index))
+
+
+            print('Append standardized data... \n')
+            outcome.append([ train_x_scaled, test_x_scaled, train_ys_scaled, test_ys_scaled])
+            print('End of appending data... \n')
+
+        else:
+
+            print('Just append original training and testing data...\n')
+
+            #just append original sampled data
+            outcome.append([train_x, test_x, train_ys, test_ys])
+
+            print('End of appending data')
+
+    return outcome
+
+
+#execute the function
+test1 = pre_process_data(panel_data, MODEL_FORM, True)
+
+test2 = pre_process_data(panel_data, MODEL_FORM, False)
 
 
 #step 2 -- test one single SVR
+COST = 1
+MarketName =  'cahm'
+Indexx = 0
 
-
-#step 3 -- do grid search
-
-
-
-''' ----old code---
-#the first way to get corresponding var list
-def search_log_or_dum(col_list, str_pattern):
-    
-    colnames_stored =[]
-    
-    if str_pattern == 'log':
-        
-        for i, obj in enumerate(col_list):
-            
-            temp_searched = re.search(r'^log', obj)
-            
-            if temp_searched:
-                
-                colnames_stored.append(obj)
-                
-    elif str_pattern == 'dummy':
-        
-        for i, obj in enumerate(col_list):
-            
-            temp_searched = re.search(r'^dummy', obj)
-            
-            if temp_searched:
-                
-                colnames_stored.append(obj)
-                
-    
-    return colnames_stored
-    
-log_vars = search_log_or_dum(lowercase_colnames, 'log')
-dum_vars = search_log_or_dum(lowercase_colnames, 'dummy')
-
-
-# the second, i.e the much simpler way to get var list
-log_vars2 = [obj for obj in lowercase_colnames if re.search(r'^log', obj)]  
-dum_vars2 = [obj for obj in lowercase_colnames if re.search(r'^dummy', obj)]
-
-all_other_vars = [obj for obj in lowercase_colnames if obj not in log_vars2 + dum_vars2]
-
-log_vars2.__add__(dum_vars2)  ==  log_vars2 + dum_vars2  # this gives the answer True
-
+if MODEL_FORM == 'original':
+    y_name = [obj for obj in response if re.search(MarketName, obj)]
+else:
+    y_name = [obj for obj in log_response if re.search(MarketName, obj)]
+#initialize estimators
 #1
-response_var_list =  [obj for obj in all_other_vars if re.search(r'^panel', obj)]
-print(response_var_list) #note: there is a variable called "panel" which should be removed later
-response_var_list = list(set(response_var_list) - set(['panel']))
-
+svr_lin = SVR(kernel='linear', C= COST)
 #2
-none_log_indep = list(set(all_other_vars) - set(response_var_list + ['code_onekey', 'panel'] ))
-print(len(none_log_indep))
-
+svr_rbf = SVR(kernel='rbf', C= COST, gamma = 0.1)
 #3
-log_response_var_list = [obj for obj in log_vars2 if re.search(r'^log_panel', obj)]
-print(log_response_var_list)
+svr_poly = SVR(kernel='poly', C= COST, degree = 2)
 
-#4
-log_indep = list(set(log_vars2) - set(log_response_var_list))
-print(log_indep)
-print(len(log_indep))
+train_x = test1[Indexx][0]
+test_x = test1[Indexx][1]
 
-[obj for obj in lowercase_colnames if re.search(r'log|lg|dummy', obj)]
+train_y = test1[Indexx][2][y_name]
+test_y = test1[Indexx][3][y_name]
+train_y2 = np.array(train_y).reshape(train_x.shape[0], )
+test_y2 = np.array(test_y).reshape(test_x.shape[0], )
+
+svr_rbf_model = svr_rbf.fit(train_x, train_y2)
+svr_lin_model = svr_lin.fit(train_x, train_y2)
+svr_poly_model = svr_poly.fit(train_x, train_y2)
+
+lin_train_y_pred = svr_lin_model.predict(train_x)
+lin_test_y_pred = svr_lin_model.predict(test_x)
+
+lin_train_rsquare = r2_score(train_y2, lin_train_y_pred)
+lin_test_rsquare = r2_score(test_y2, lin_test_y_pred)
+print("Training Rsquare ", lin_train_rsquare)
+print("Testing Rsquare ", lin_test_rsquare)
+
+
+#step 3 -- do grid search: define a function
+
+
+
+
+
 '''
+print(test1.__len__())
+print(test1[0][0].shape)
+print(test1[0][1].shape)
+print(test1[0][2].shape)
+print(test1[0][3].shape)
+print(test1[0][0].index)
+print(test1[0][1].index)
 
+print(test1[0][2].index)
+print(test1[0][3].index)
+print(test1[1][2].index)
+print(test1[1][3].index)
+print(test1[2][2].index)
+print(test1[2][3].index)
+
+
+kf = KFold(n_splits=3, random_state=123, shuffle=False)
+
+for train_index, test_index in kf.split(panel_data):
+    #print("TRAIN:", train_index,'\n')
+    #print("TEST:", test_index, '\n')
+    print(panel_data.iloc[train_index, : ].index)
+    print(panel_data.iloc[test_index, :].index)
+    print(panel_data.iloc[train_index, : ].head(3))
+#end of testing KFold().
+'''
